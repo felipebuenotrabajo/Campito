@@ -192,3 +192,6 @@ dialog.modal footer { display: flex; gap: .6rem; align-items: center; padding: .
   .sp { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+.enlaces { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: 0 1rem .5rem; }
+.enlaces small { flex-basis: 100%; color: var(--muted, #666); }

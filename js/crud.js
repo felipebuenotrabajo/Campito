@@ -192,12 +192,17 @@ export async function montarCrud(id, cont, x) {
       return `${head}<div class="campo ${c.tipo === 'area' ? 'ancho' : ''}" data-campo="${c.k}">${lab}${input}${c.ayuda ? `<small>${esc(c.ayuda)}</small>` : ''}</div>`;
     }).join('');
 
+    let enl = '';
+    if (!nuevo && cfg.enlaces) {
+      const e = cfg.enlaces(base);
+      enl = `<div class="enlaces">${e.links.map((l) => `<a class="btn suave mini" href="${esc(l.href)}" target="_blank" rel="noopener noreferrer">${esc(l.t)} ↗</a>`).join('')}${e.nota ? `<small>${esc(e.nota)}</small>` : ''}</div>`;
+    }
     const dlg = document.createElement('dialog');
     dlg.className = 'modal';
     const extra = (cfg.calc || cfg.cols.some((c) => c.calc && c.lista)) ? '<div class="calc-pie"></div>' : '';
     dlg.innerHTML = `<form method="dialog" novalidate>
       <header><h2>${nuevo ? 'Añadir' : puedeEditar ? 'Editar' : 'Ver'} ${esc(cfg.singular)}</h2><button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button></header>
-      <div class="campos">${html}</div>${extra}
+      ${enl}<div class="campos">${html}</div>${extra}
       <footer>
         ${!nuevo && puedeBorrar ? '<button type="button" class="btn peligro" data-borrar>Eliminar</button>' : ''}
         ${!nuevo && puedeEditar ? '<button type="button" class="btn suave" data-duplicar>Duplicar</button>' : ''}

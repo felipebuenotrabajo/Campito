@@ -158,7 +158,8 @@ export const ENTIDADES = {
       c('poligono', 'Polígono', 'texto', { lista: true }),
       c('parcela', 'Parcela', 'texto', { lista: true }),
       c('recinto', 'Recinto', 'texto'),
-      c('termino', 'Término', 'texto'),
+      c('termino', 'Término municipal', 'texto', { lista: true, sugerencias: ['VILLALBA BARROS', 'SANTA MARTA', 'FUENTE MAESTRE', 'ACEUCHAL'] }),
+      c('ref_catastral', 'Referencia catastral', 'texto', { lista: true, ayuda: 'Se usa para abrir la parcela en la Sede del Catastro' }),
       c('region', 'Región', 'texto'),
       c('ha_sigpac', 'Ha SIGPAC', 'num', { grupo: 'Superficie' }),
       c('ha_otros_recintos', 'Ha otros recintos', 'num'),
@@ -185,7 +186,18 @@ export const ENTIDADES = {
       c('activa', 'Activa', 'bool', { def: true, grupo: 'Otros' }),
       c('notas', 'Notas', 'area'),
     ],
-    filtros: [fk('cultivo_id', 'Cultivo', 'cultivos'), fk('explotacion_id', 'Explotación', 'entidades'), fk('lote_id', 'Lote', 'entidades'), fk('finca_id', 'Finca', 'fincas')],
+    filtros: [c('termino', 'Término', 'select', { opciones: ['VILLALBA BARROS', 'SANTA MARTA', 'FUENTE MAESTRE', 'ACEUCHAL'] }), fk('cultivo_id', 'Cultivo', 'cultivos'), fk('explotacion_id', 'Explotación', 'entidades'), fk('lote_id', 'Lote', 'entidades'), fk('finca_id', 'Finca', 'fincas')],
+    enlaces: (r) => {
+      const rc = (r.ref_catastral || '').replace(/\s/g, '').toUpperCase();
+      const ident = [r.termino, r.poligono && `Pol. ${r.poligono}`, r.parcela && `Parc. ${r.parcela}`, r.recinto && `Rec. ${r.recinto}`].filter(Boolean).join(' · ');
+      return {
+        nota: ident ? `Para buscarla en SIGPAC: ${ident}` : '',
+        links: [
+          { t: 'Abrir visor SIGPAC', href: 'https://sigpac.mapa.gob.es/fega/visor/' },
+          rc.length >= 14 ? { t: 'Ver en Catastro', href: `https://www1.sedecatastro.gob.es/Cartografia/mapa.aspx?refcat=${rc.slice(0, 14)}` } : null,
+        ].filter(Boolean),
+      };
+    },
     totales: [{ k: 'ha_total', label: 'Hectáreas', tipo: 'num' }],
     defaults: () => ({ activa: true }),
     tarjeta: { t: (r) => r.nombre, s: (r, x) => [x.nombre('cultivos', r.cultivo_id), r.variedad, `Pol. ${r.poligono ?? '-'} · Par. ${r.parcela ?? '-'}`].filter(Boolean).join(' · '), v: (r) => r.ha_total, vt: 'ha' },
