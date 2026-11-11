@@ -262,14 +262,19 @@ export function analizar(hojas) {
     if (total == null && importe != null) total = Math.round(importe * (1 + iva / 100) * cant * 100) / 100;
     if (importe == null && total != null && cant) importe = Math.round((total / (1 + iva / 100) / cant) * 1e6) / 1e6;
     if (importe == null && total == null && !txt(f[3])) { s.descartadas++; continue; }
+    // Forma de pago: «Cmpensado 26-149» → Compensado (+ referencia en Aplicación); «Pay Pal» → PayPal
+    let pago = txt(f[16]), aplic = txt(f[9]);
+    const comp = /^c-?o?mpensad[oa]\s*(.*)$/i.exec(pago || '');
+    if (comp) { pago = 'Compensado'; if (comp[1]) aplic = [aplic, `Compensado con ${comp[1].trim()}`].filter(Boolean).join(' · '); }
+    else if (/^pay\s*pal$/i.test(pago || '')) pago = 'PayPal';
     const dest = clave(f[10]);
     if (dest && !DESTINO_DE[dest]) warn(`Gasto fila ${i + 1}: destino desconocido "${txt(f[10])}"`);
     tablas.gastos.push({
       numero: txt(f[1]), fecha: fe, concepto_id: ref('conceptos_gasto', conceptos.de(f[3])), cantidad: cant,
       factura_a_id: ref('entidades', ent(f[5], 'gasto.factura a')), empresa_real_id: ref('entidades', ent(f[6], 'gasto.empresa real')),
-      proveedor_id: ref('proveedores', proveedores.de(f[7])), num_factura: txt(f[8]), aplicacion: txt(f[9]),
+      proveedor_id: ref('proveedores', proveedores.de(f[7])), num_factura: txt(f[8]), aplicacion: aplic,
       destino: DESTINO_DE[dest] ?? null, importante: si(f[11]), importe: importe ?? 0, iva_pct: iva, total: total ?? 0,
-      fecha_pago: fecha(f[15]), modalidad_pago: modalidades.de(f[16]), pagado_por_id: ref('entidades', ent(f[18], 'gasto.pagado por')),
+      fecha_pago: fecha(f[15]), modalidad_pago: modalidades.de(pago), pagado_por_id: ref('entidades', ent(f[18], 'gasto.pagado por')),
     });
     s.importadas++;
   }
