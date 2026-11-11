@@ -66,7 +66,7 @@ export const ref = (tabla, nombre) => (nombre == null ? null : { __ref: tabla, n
 // ---------- entidades ----------
 const ALIAS = {
   antonio: 'Antonio', pepe: 'Pepe', ada: 'Ada', cati: 'Cati', catalina: 'Cati',
-  felipe: 'Felipe', fhijo: 'Felipe', fbf: 'FBF',
+  felipe: 'Felipe', fhijo: 'FBF', fbf: 'FBF',
   her: 'Hermanos Bueno SC', hnos: 'Hermanos Bueno SC', 'hnos bueno': 'Hermanos Bueno SC',
   'hermanos bueno': 'Hermanos Bueno SC', 'hermanos bueno sc': 'Hermanos Bueno SC',
   agro: 'Agrobueno SC', agrobueno: 'Agrobueno SC', 'agrobueno sc': 'Agrobueno SC',
