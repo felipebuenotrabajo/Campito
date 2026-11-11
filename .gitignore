@@ -1,0 +1,11 @@
+# Los datos de la familia NUNCA van al repositorio
+*.xlsx
+*.xlsm
+*.xls
+*.csv
+hojas.json
+tests/fixtures/
+.env
+.env.*
+node_modules/
+.DS_Store
