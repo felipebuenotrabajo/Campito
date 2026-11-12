@@ -73,21 +73,24 @@ export async function montarImportar(cont, x) {
         </tbody></table></div>
         <p class="nota">También se crean los catálogos: ${a.catalogos.tareas.length} tareas, ${a.catalogos.proveedores.length} proveedores, ${a.catalogos.conceptos_gasto.length} conceptos de gasto y ${a.catalogos.compradores.length} compradores (los que ya existan se respetan).</p>
         ${a.avisos.length ? `<details class="avisos"><summary>${a.avisos.length} avisos</summary><ul>${a.avisos.map((m) => `<li>${esc(m)}</li>`).join('')}</ul></details>` : ''}
+        <label class="check cero"><input type="checkbox" id="imp-cero"> <b>Empezar de cero</b>: borra todo lo que hay ahora en la app (también proveedores, tareas, conceptos y compradores) y carga solo este Excel. Se conservan los usuarios, las entidades y las cuentas.</label>
         <button class="btn primario" id="imp-go">Importar ahora</button>
         <pre id="imp-log" class="log" hidden></pre>
       </section>`;
     res.querySelector('#imp-go').addEventListener('click', async (ev) => {
-      const plan = Object.fromEntries([...res.querySelectorAll('[data-t]')].map((s) => [s.dataset.t, s.value]));
-      if (Object.values(plan).includes('reemplazar') && !confirm('Vas a BORRAR los datos actuales de las tablas marcadas «Vaciar y volver a cargar». ¿Continuar?')) return;
+      const cero = res.querySelector('#imp-cero').checked;
+      const plan = Object.fromEntries([...res.querySelectorAll('[data-t]')].map((s) => [s.dataset.t, cero ? 'reemplazar' : s.value]));
+      if (cero) { if ((prompt('Se va a BORRAR todo lo que hay ahora en la app y se cargará este Excel.\nEscribe BORRAR para confirmar:') || '').trim().toUpperCase() !== 'BORRAR') return; }
+      else if (Object.values(plan).includes('reemplazar') && !confirm('Vas a BORRAR los datos actuales de las tablas marcadas «Vaciar y volver a cargar». ¿Continuar?')) return;
       ev.target.disabled = true;
       const log = res.querySelector('#imp-log'); log.hidden = false;
       const say = (m) => { log.textContent += m + '\n'; log.scrollTop = log.scrollHeight; };
-      try { await ejecutar(a, plan, say); toast('Importación terminada'); } catch (err) { say('✗ ' + mensajeError(err)); toast('La importación se detuvo', 'error'); }
+      try { await ejecutar(a, plan, say, cero); toast('Importación terminada'); } catch (err) { say('✗ ' + mensajeError(err)); toast('La importación se detuvo', 'error'); }
       ev.target.disabled = false;
     });
   }
 
-  async function ejecutar(a, plan, say) {
+  async function ejecutar(a, plan, say, cero = false) {
     const sb = x.sb;
     // 1) vaciar (en orden inverso por dependencias)
     for (const t of [...ORDEN].reverse()) {
@@ -96,6 +99,13 @@ export async function montarImportar(cont, x) {
       const { error } = await sb.from(t).delete().gte(pk, 0);
       if (error) throw new Error(`No se pudo vaciar ${NOMBRES[t]}: ${error.message}`);
       say(`• ${NOMBRES[t]} vaciado`);
+    }
+    if (cero) { // empezar de cero: también se vacían los catálogos (las tablas que los usan ya están vacías)
+      for (const t of ['tareas', 'proveedores', 'conceptos_gasto', 'compradores']) {
+        const { error } = await sb.from(t).delete().gte('id', 0);
+        if (error) throw new Error(`No se pudo vaciar el catálogo ${t}: ${error.message}`);
+        say(`• Catálogo ${t} vaciado`);
+      }
     }
     // 2) catálogos
     const cats = [['tareas', a.catalogos.tareas.map((nombre) => ({ nombre }))], ['proveedores', a.catalogos.proveedores.map((nombre) => ({ nombre }))],

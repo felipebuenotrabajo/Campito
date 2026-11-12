@@ -195,3 +195,4 @@ dialog.modal footer { display: flex; gap: .6rem; align-items: center; padding: .
 
 .enlaces { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: 0 1rem .5rem; }
 .enlaces small { flex-basis: 100%; color: var(--muted, #666); }
+.check.cero { display: block; margin: .75rem 0; padding: .6rem .75rem; border: 1px solid var(--borde, #d9d4c5); border-radius: 10px; }
