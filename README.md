@@ -38,6 +38,7 @@ cultivos ── fincas ── parcelas (SIGPAC)
                └── cosechas
 gastos ── proveedores · conceptos_gasto        ingresos ── compradores
 cuentas ── movimientos_cuenta                  inventario · correspondencia
+cabidas · titulos_cooperativa · derechos_pac · maquinaria · movimientos_ada   (cooperativa, PAC, compras, Ada)
 ```
 
 * **Finca** = unidad de trabajo (p. ej. «Cincho»); agrupa varias **parcelas** SIGPAC. El diario y las cosechas se anotan por finca.
@@ -59,5 +60,5 @@ node tests/test-parser.mjs hojas.json  # comprobar el importador con un volcado 
 ## Pendiente (siguientes fases)
 
 * Reparto de los gastos comunes entre socios por índice de hectáreas (hojas *Cálculo Índices*, *Antonio*, *Pepe*, *FBF*, *Cati*, *Felipe*).
-* Cabidas y saldos con la cooperativa; derechos PAC; compras de maquinaria.
+* Informes de producción por parcela (Olivos, Viñas, Cereales) y jornales por semana.
 * Informes por socio e impresión.

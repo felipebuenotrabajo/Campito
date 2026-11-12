@@ -1,6 +1,6 @@
 // Definición declarativa de cada pantalla: columnas, formularios, filtros y totales.
 // Para añadir un campo nuevo a una pantalla basta con añadirlo aquí (y a la tabla en Supabase).
-import { eur, numf, redondea } from './util.js';
+import { eur, numf, redondea, fechaf } from './util.js';
 
 export const TAJOS = ['Viñas', 'Olivos', 'Almendros', 'Barbechos', 'Cereales', 'Día de orden', 'Casa'];
 export const DESTINOS = ['Todos', 'Viñas', 'Olivos', 'Almendros', 'Barbechos', 'Cereales', 'Casa', 'A cuenta', 'Her'];
@@ -332,6 +332,79 @@ export const ENTIDADES = {
     ],
     defaults: () => ({ rol: 'editor' }), tarjeta: { t: (r) => r.email, s: (r) => `${r.nombre ?? ''} · ${r.rol}`, v: () => null },
   },
+
+  // ============ HOJAS RESTANTES DEL EXCEL ============
+  maquinaria: {
+    titulo: 'Compras de maquinaria', singular: 'compra', grupo: 'otros', icono: 'inventario', orden: [['equipo', true]],
+    cols: [
+      c('equipo', 'Equipo', 'texto', { lista: true, req: true }),
+      fk('pagado_por_id', 'La paga', 'entidades', { lista: true, req: true }),
+      c('referencia', 'Nº de gasto o nota', 'texto', { lista: true, ayuda: 'Año-número del gasto (p. ej. 26-227) o una nota' }),
+      c('notas', 'Notas', 'area'),
+    ],
+    filtros: [fk('pagado_por_id', 'La paga', 'entidades')],
+    tarjeta: { t: (r) => r.equipo, s: (r, x) => [x.nombre('entidades', r.pagado_por_id), r.referencia].filter(Boolean).join(' · '), v: () => null },
+  },
+  cabidas: {
+    titulo: 'Cabidas (cooperativa)', singular: 'saldo', grupo: 'otros', icono: 'cuentas', orden: [['producto', true], ['id', true]],
+    cols: [
+      fk('socio_id', 'Socio', 'entidades', { lista: true, req: true }),
+      c('producto', 'Producto', 'select', { lista: true, req: true, opciones: ['Aderezo', 'Almazara', 'Blanca', 'Tinta'] }),
+      c('fecha', 'Fecha', 'fecha', { lista: true }),
+      c('kg', 'Kg entregados', 'num', { lista: true }),
+      c('valor', 'Valor (€)', 'eur', { lista: true }),
+      c('pendiente', 'Pendiente de cobro (€)', 'eur', { lista: true }),
+      c('kg_cabida', 'Kg de cabida en la cooperativa', 'num', { lista: true }),
+      c('notas', 'Notas', 'area'),
+    ],
+    filtros: [fk('socio_id', 'Socio', 'entidades'), c('producto', 'Producto', 'select', { opciones: ['Aderezo', 'Almazara', 'Blanca', 'Tinta'] })],
+    totales: [{ k: 'kg', label: 'Kg', tipo: 'num' }, { k: 'valor', label: 'Valor', tipo: 'eur' }, { k: 'pendiente', label: 'Pendiente', tipo: 'eur' }],
+    tarjeta: { t: (r, x) => `${x.nombre('entidades', r.socio_id)} · ${r.producto}`, s: (r) => [r.kg != null ? `${numf(r.kg, 0)} kg` : '', r.pendiente ? `pendiente ${eur(r.pendiente)}` : ''].filter(Boolean).join(' · '), v: (r) => r.valor, vt: 'eur' },
+  },
+  titulos_cooperativa: {
+    titulo: 'Títulos de la cooperativa', singular: 'título', grupo: 'otros', icono: 'cuentas', orden: [['fecha', true], ['id', true]],
+    cols: [
+      fk('titular_id', 'Titular', 'entidades', { lista: true, req: true }),
+      c('titulos', 'Nº de títulos', 'int', { lista: true, req: true }),
+      c('euros_titulo', '€ por título', 'eur', { lista: true }),
+      c('capital', 'Capital (€)', 'eur', { lista: true }),
+      c('fecha', 'Fecha', 'fecha', { lista: true }),
+      c('pendientes', 'Títulos pendientes', 'int', { lista: true }),
+      c('notas', 'Notas', 'area'),
+    ],
+    filtros: [fk('titular_id', 'Titular', 'entidades')],
+    totales: [{ k: 'titulos', label: 'Títulos', tipo: 'num' }, { k: 'capital', label: 'Capital', tipo: 'eur' }],
+    tarjeta: { t: (r, x) => x.nombre('entidades', r.titular_id) || 'Títulos', s: (r) => `${r.titulos} títulos · ${fechaf(r.fecha)}`, v: (r) => r.capital, vt: 'eur' },
+  },
+  derechos_pac: {
+    titulo: 'Derechos PAC', singular: 'derecho', grupo: 'terreno', icono: 'parcelas', orden: [['numero', true]],
+    cols: [
+      c('numero', 'Nº de derecho', 'int', { lista: true, req: true }),
+      c('valor_2024', 'Valor 2024 (€)', 'eur', { lista: true }),
+      c('valor_2025', 'Valor 2025 (€)', 'eur', { lista: true }),
+      c('valor_2026', 'Valor 2026 (€)', 'eur', { lista: true }),
+      c('valor_2027', 'Valor 2027 (€)', 'eur', { lista: true }),
+      c('notas', 'Notas', 'area'),
+    ],
+    totales: [{ k: 'valor_2024', label: '2024', tipo: 'eur' }, { k: 'valor_2025', label: '2025', tipo: 'eur' }, { k: 'valor_2026', label: '2026', tipo: 'eur' }, { k: 'valor_2027', label: '2027', tipo: 'eur' }],
+    tarjeta: { t: (r) => `Derecho nº ${r.numero}`, s: (r) => `2026: ${eur(r.valor_2026)} · 2027: ${eur(r.valor_2027)}`, v: (r) => r.valor_2026, vt: 'eur' },
+  },
+  movimientos_ada: {
+    titulo: 'Cuentas de Ada', singular: 'movimiento', grupo: 'otros', icono: 'cuentas', orden: [['fecha', false], ['id', false]], fechaCol: 'fecha',
+    cols: [
+      c('tipo', 'Tipo', 'select', { lista: true, req: true, opciones: ['Deuda con Ada', 'Deuda de Ada', 'Pago a Ada'] }),
+      c('concepto', 'Concepto', 'texto', { lista: true, req: true }),
+      c('fecha', 'Fecha', 'fecha', { lista: true }),
+      c('referencia', 'Nº de ingreso o factura', 'texto'),
+      c('importe', 'Importe (€)', 'eur', { lista: true, req: true }),
+      c('banco', 'Banco o caja', 'texto'),
+      c('notas', 'Notas', 'area'),
+    ],
+    filtros: [c('tipo', 'Tipo', 'select', { opciones: ['Deuda con Ada', 'Deuda de Ada', 'Pago a Ada'] })],
+    totales: [{ k: 'importe', label: 'Importe', tipo: 'eur' }],
+    defaults: () => ({ tipo: 'Deuda con Ada', importe: 0 }),
+    tarjeta: { t: (r) => r.concepto, s: (r) => [r.tipo, fechaf(r.fecha)].filter(Boolean).join(' · '), v: (r) => r.importe, vt: 'eur' },
+  },
 };
 
 // Menú
@@ -339,7 +412,7 @@ export const MENU = [
   { id: 'resumen', titulo: 'Resumen', icono: 'resumen', grupo: 'principal' },
   { id: 'diario_trabajo' }, { id: 'gastos' }, { id: 'ingresos' }, { id: 'cosechas' },
   { id: 'parcelas' }, { id: 'fincas' },
-  { id: 'movimientos_cuenta' }, { id: 'inventario' }, { id: 'correspondencia' },
+  { id: 'movimientos_cuenta' }, { id: 'cabidas' }, { id: 'titulos_cooperativa' }, { id: 'movimientos_ada' }, { id: 'inventario' }, { id: 'maquinaria' }, { id: 'derechos_pac' }, { id: 'correspondencia' },
   { id: 'proveedores' }, { id: 'compradores' }, { id: 'tareas' }, { id: 'conceptos_gasto' }, { id: 'entidades' }, { id: 'cuentas' },
   { id: 'importar', titulo: 'Importar Excel', icono: 'importar', grupo: 'admin', soloAdmin: true },
   { id: 'miembros' },

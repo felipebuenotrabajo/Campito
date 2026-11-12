@@ -9,11 +9,13 @@ const SHEETJS = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.mi
 const HOJAS = {
   'Parcelas': [75, 32], 'Diario de trabajo 2026': [960, 30], 'Gastos 2026': [1100, 20], 'Ingresos 2026': [400, 20],
   'Cosechas 2026': [260, 21], 'CUENTAS COOPE': [400, 35], 'INVENTARIO': [300, 9], 'Correspondencia 2026': [600, 8],
+  'Compras Nuevas': [30, 5], 'Cabidas': [30, 27], 'VALOR DERECHOS ANTONIO': [60, 9], 'CONTABILIDAD ADA': [40, 12],
 };
-const ORDEN = ['fincas', 'parcelas', 'diario_trabajo', 'gastos', 'ingresos', 'cosechas', 'movimientos_cuenta', 'inventario', 'correspondencia'];
+const ORDEN = ['fincas', 'parcelas', 'diario_trabajo', 'gastos', 'ingresos', 'cosechas', 'movimientos_cuenta', 'inventario', 'correspondencia', 'maquinaria', 'cabidas', 'titulos_cooperativa', 'derechos_pac', 'movimientos_ada'];
 const NOMBRES = {
   fincas: 'Fincas', parcelas: 'Parcelas', diario_trabajo: 'Diario de trabajo', gastos: 'Gastos', ingresos: 'Ingresos', cosechas: 'Cosechas',
   movimientos_cuenta: 'Movimientos de cuentas', inventario: 'Inventario', correspondencia: 'Correspondencia',
+  maquinaria: 'Compras de maquinaria', cabidas: 'Cabidas', titulos_cooperativa: 'Títulos de la cooperativa', derechos_pac: 'Derechos PAC', movimientos_ada: 'Cuentas de Ada',
 };
 
 function cargarScript(src) {

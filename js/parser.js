@@ -22,6 +22,7 @@ const entero = (v) => {
   const n = num(v);
   return n == null ? null : Math.round(n);
 };
+const redondeo = (n) => Math.round(n * 100) / 100;
 const si = (v) => ['s', 'si', 'sí', 'true', '1', 'x'].includes(clave(v));
 
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -71,6 +72,7 @@ const ALIAS = {
   'hermanos bueno': 'Hermanos Bueno SC', 'hermanos bueno sc': 'Hermanos Bueno SC',
   agro: 'Agrobueno SC', agrobueno: 'Agrobueno SC', 'agrobueno sc': 'Agrobueno SC',
   comun: 'Común',
+  'a.bueno': 'Antonio', 'j.bueno': 'Pepe', 'j. bueno': 'Pepe', 'c.bueno': 'Cati', 'f.bueno': 'Felipe', // etiquetas de la hoja Cabidas
 };
 
 // ---------- ganadería (se excluye) ----------
@@ -398,6 +400,108 @@ export function analizar(hojas) {
   for (const g of tablas.gastos) if (Math.abs(g.importe * (1 + g.iva_pct / 100) * g.cantidad - g.total) > 0.05) descuadre++;
   if (descuadre) warn(`${descuadre} gastos donde importe + IVA ≠ total (se conserva el total del Excel)`);
   if (desconocidos.size) warn('Nombres no reconocidos (quedan vacíos): ' + [...desconocidos].slice(0, 15).join('; '));
+
+  // ===== Compras Nuevas (maquinaria): una columna por sociedad que paga =====
+  const hcn = hojas['Compras Nuevas'] || [];
+  tablas.maquinaria = [];
+  const quienPaga = ['Hermanos Bueno SC', 'Agrobueno SC', 'FBF']; // columnas B, C, D
+  for (let i = 2; i < hcn.length; i++) {
+    const f = hcn[i];
+    const eq = txt(f?.[0]);
+    if (!eq) continue;
+    stat('maquinaria').leidas++;
+    const col = [1, 2, 3].find((c) => txt(f[c]));
+    if (col == null) { stat('maquinaria').descartadas++; continue; }
+    tablas.maquinaria.push({
+      equipo: eq.charAt(0).toUpperCase() + eq.slice(1),
+      pagado_por_id: { __ref: 'entidades', nombre: quienPaga[col - 1] },
+      referencia: txt(f[col]), notas: null,
+    });
+    stat('maquinaria').importadas++;
+  }
+
+  // ===== Cabidas: saldo pendiente con la cooperativa por socio y producto =====
+  const hcb = hojas['Cabidas'] || [];
+  tablas.cabidas = [];
+  tablas.titulos_cooperativa = [];
+  const PRODUCTOS = [['Aderezo', 3], ['Almazara', 7], ['Blanca', 11], ['Tinta', 15]]; // columna donde empieza cada bloque (fecha, kg, valor, pendiente)
+  const kgCabida = new Map(); // «socio|producto» -> kg en la cooperativa (bloque de la derecha, columnas V:Y)
+  for (let i = 7; i < Math.min(hcb.length, 16); i++) {
+    const f = hcb[i];
+    const socio = ent(f?.[20], 'cabidas.cooperativa');
+    if (!socio) continue;
+    PRODUCTOS.forEach(([prod], k) => { const v = num(f[21 + k]); if (v != null) kgCabida.set(`${socio}|${prod}`, v); });
+  }
+  const filasCabidas = [...Array(7).keys()].map((k) => 7 + k).concat([26]); // filas 8–14 y la de Ada (fila 27)
+  for (const i of filasCabidas) {
+    const f = hcb[i];
+    const socio = ent(f?.[2], 'cabidas');
+    if (!socio) continue;
+    for (const [prod, c0] of PRODUCTOS) {
+      stat('cabidas').leidas++;
+      const kg = num(f[c0 + 1]);
+      if (kg == null && num(f[c0 + 2]) == null) { stat('cabidas').descartadas++; continue; }
+      tablas.cabidas.push({
+        socio_id: { __ref: 'entidades', nombre: socio }, producto: prod, fecha: fecha(f[c0]), kg,
+        valor: num(f[c0 + 2]), pendiente: Math.abs(num(f[c0 + 3]) ?? 0) < 0.05 ? 0 : redondeo(num(f[c0 + 3])),
+        kg_cabida: kgCabida.get(`${socio}|${prod}`) ?? null, notas: null,
+      });
+      stat('cabidas').importadas++;
+    }
+  }
+  for (let i = 19; i < Math.min(hcb.length, 23); i++) { // títulos de la cooperativa de almendras
+    const f = hcb[i];
+    const t = entero(f?.[5]);
+    if (t == null) continue;
+    const otro = txt(f[11]);
+    stat('titulos_cooperativa').leidas++;
+    tablas.titulos_cooperativa.push({
+      titulos: t, euros_titulo: num(f[6]), capital: num(f[7]), fecha: fecha(f[8]), pendientes: entero(f[9]) ?? 0,
+      titular_id: ent(f[10], 'titulos') ? { __ref: 'entidades', nombre: ent(f[10], 'titulos') } : null,
+      notas: otro ? `Titularidad compartida con ${otro}` : null,
+    });
+    stat('titulos_cooperativa').importadas++;
+  }
+
+  // ===== Valor de los derechos PAC por año =====
+  const hd = hojas['VALOR DERECHOS ANTONIO'] || [];
+  tablas.derechos_pac = [];
+  for (let i = 2; i < hd.length; i++) {
+    const f = hd[i];
+    const n = typeof f?.[3] === 'number' ? entero(f[3]) : null;
+    if (n == null) continue;
+    stat('derechos_pac').leidas++;
+    tablas.derechos_pac.push({ numero: n, valor_2024: num(f[4]), valor_2025: num(f[5]), valor_2026: num(f[6]), valor_2027: num(f[7]), notas: null });
+    stat('derechos_pac').importadas++;
+  }
+
+  // ===== Cuentas de Ada =====
+  const ha = hojas['CONTABILIDAD ADA'] || [];
+  tablas.movimientos_ada = [];
+  const FIN = /^total/;
+  const bloqueAda = (desde, hasta, tipo) => {
+    for (let i = desde; i < Math.min(ha.length, hasta); i++) {
+      const f = ha[i];
+      const c = txt(f?.[0]);
+      if (!c || FIN.test(clave(c))) continue;
+      const imp = num(f[3]);
+      if (imp == null) continue;
+      stat('movimientos_ada').leidas++;
+      tablas.movimientos_ada.push({ tipo, concepto: c, fecha: fecha(f[1]), referencia: txt(f[2]), importe: imp, banco: null, notas: null });
+      stat('movimientos_ada').importadas++;
+    }
+  };
+  bloqueAda(5, 20, 'Deuda con Ada');
+  bloqueAda(24, 33, 'Deuda de Ada');
+  for (let i = 5; i < Math.min(ha.length, 20); i++) { // pagos realizados de la empresa a Ada (columnas F:K)
+    const f = ha[i];
+    const c = txt(f?.[5]);
+    const imp = num(f?.[8]) ?? num(f?.[7]);
+    if (!c || imp == null) continue;
+    stat('movimientos_ada').leidas++;
+    tablas.movimientos_ada.push({ tipo: 'Pago a Ada', concepto: c, fecha: fecha(f[9]), referencia: txt(f[6]), importe: imp, banco: txt(f[10]), notas: null });
+    stat('movimientos_ada').importadas++;
+  }
 
   return { tablas, catalogos, cifs, resumen, avisos };
 }
