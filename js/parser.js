@@ -251,11 +251,20 @@ export function analizar(hojas) {
   tablas.gastos = [];
   for (let i = 3; i < hg.length; i++) {
     const f = hg[i];
-    const fe = fecha(f?.[2]);
-    if (!fe) continue;
+    let fe = fecha(f?.[2]);
+    let notaFecha = null;
+    if (!fe) { // fecha escrita mal (p. ej. 15/10/1900): si hay importe y fecha de pago, se conserva el gasto con la fecha de pago
+      const fp = fecha(f?.[15]);
+      if (!(txt(f?.[1]) && fp && (num(f[14]) || num(f[12])))) continue;
+      fe = fp;
+      notaFecha = `Fecha original del Excel incorrecta (${String(f[2]).slice(0, 10)}); se usa la fecha de pago`;
+      warn(`Gasto ${txt(f[1])}: ${notaFecha}`);
+    }
     const s = stat('gastos');
     s.leidas++;
-    if (esGanaderia(f[3], f[5], f[6], f[7], f[9], f[10], f[18])) { s.ganaderia++; continue; }
+    // Ganadería = empresa real Bubesa, destino Granja o concepto/proveedor de cerdos. «Factura a» y «pagado por» NO cuentan:
+    // la granja a veces adelanta pagos de gastos agrícolas que luego se reparten (p. ej. picado de olivos).
+    if (esGanaderia(f[3], f[6], f[7], f[9], f[10])) { s.ganaderia++; continue; }
     const iva0 = num(f[13]) ?? 0;
     const iva = iva0 > 0 && iva0 < 1 ? iva0 * 100 : iva0;
     const cant = num(f[4]) ?? 1;
@@ -269,14 +278,17 @@ export function analizar(hojas) {
     const comp = /^c-?o?mpensad[oa]\s*(.*)$/i.exec(pago || '');
     if (comp) { pago = 'Compensado'; if (comp[1]) aplic = [aplic, `Compensado con ${comp[1].trim()}`].filter(Boolean).join(' · '); }
     else if (/^pay\s*pal$/i.test(pago || '')) pago = 'PayPal';
+    if (notaFecha) aplic = [aplic, notaFecha].filter(Boolean).join(' · ');
+    const adelanto = clave(f[18]) === 'granja';
     const dest = clave(f[10]);
     if (dest && !DESTINO_DE[dest]) warn(`Gasto fila ${i + 1}: destino desconocido "${txt(f[10])}"`);
     tablas.gastos.push({
       numero: txt(f[1]), fecha: fe, concepto_id: ref('conceptos_gasto', conceptos.de(f[3])), cantidad: cant,
       factura_a_id: ref('entidades', ent(f[5], 'gasto.factura a')), empresa_real_id: ref('entidades', ent(f[6], 'gasto.empresa real')),
-      proveedor_id: ref('proveedores', proveedores.de(f[7])), num_factura: txt(f[8]), aplicacion: aplic,
+      proveedor_id: ref('proveedores', proveedores.de(f[7])), num_factura: txt(f[8]), aplicacion: adelanto ? [aplic, 'Adelantado por la granja'].filter(Boolean).join(' · ') : aplic,
+      es_personal: clave(f[6]) === 'fhijo', // «Fhijo» = gasto personal de FBF (no se reparte); «FBF» = gasto común que se reparte
       destino: DESTINO_DE[dest] ?? null, importante: si(f[11]), importe: importe ?? 0, iva_pct: iva, total: total ?? 0,
-      fecha_pago: fecha(f[15]), modalidad_pago: modalidades.de(pago), pagado_por_id: ref('entidades', ent(f[18], 'gasto.pagado por')),
+      fecha_pago: fecha(f[15]), modalidad_pago: modalidades.de(pago), pagado_por_id: adelanto ? null : ref('entidades', ent(f[18], 'gasto.pagado por')),
     });
     s.importadas++;
   }

@@ -2,6 +2,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_JS } from './config.js';
 import { ENTIDADES, MENU, GRUPOS, ICONOS } from './esquema.js';
 import { montarCrud, cargarTodo, mensajeError } from './crud.js';
 import { montarResumen } from './resumen.js';
+import { montarPersonas } from './personas.js';
 import { montarImportar } from './importar.js';
 import { $, $$, esc, toast } from './util.js';
 
@@ -133,6 +134,7 @@ async function ruta() {
   const cont = document.createElement('div'); cont.className = 'pagina'; main.append(cont);
   try {
     if (id === 'resumen') await montarResumen(cont, x);
+    else if (id === 'personas') await montarPersonas(cont, x);
     else if (id === 'importar') await montarImportar(cont, x);
     else await montarCrud(id, cont, x);
   } catch (e) { cont.innerHTML = `<div class="vacio">Algo ha fallado: ${esc(mensajeError(e))}</div>`; console.error(e); }

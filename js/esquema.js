@@ -72,6 +72,7 @@ export const ENTIDADES = {
       c('iva_pct', 'IVA (%)', 'num', { def: 21, sugerencias: [0, 4, 10, 12, 21] }),
       c('total', 'Total con IVA (€)', 'eur', { req: true, lista: true }),
       fk('empresa_real_id', 'A cargo de (quién lo debe)', 'entidades', { lista: true }),
+      c('es_personal', 'Gasto personal (no se reparte)', 'bool', { ayuda: 'Marcado: va entero a la persona indicada. Sin marcar y a cargo de FBF o de una sociedad: se reparte entre los socios por hectáreas.' }),
       fk('factura_a_id', 'Factura a nombre de', 'entidades'),
       fk('pagado_por_id', 'Pagado por', 'entidades'),
       c('modalidad_pago', 'Forma de pago', 'texto', { sugerencias: ['Caja Rural de Extremadura', 'Cooperativa', 'Efectivo', 'Caja Almendralejo', 'Tarjeta Caja Rural', 'Bizum'] }),
@@ -410,6 +411,7 @@ export const ENTIDADES = {
 // Menú
 export const MENU = [
   { id: 'resumen', titulo: 'Resumen', icono: 'resumen', grupo: 'principal' },
+  { id: 'personas', titulo: 'Por persona', icono: 'miembros', grupo: 'principal' },
   { id: 'diario_trabajo' }, { id: 'gastos' }, { id: 'ingresos' }, { id: 'cosechas' },
   { id: 'parcelas' }, { id: 'fincas' },
   { id: 'movimientos_cuenta' }, { id: 'cabidas' }, { id: 'titulos_cooperativa' }, { id: 'movimientos_ada' }, { id: 'inventario' }, { id: 'maquinaria' }, { id: 'derechos_pac' }, { id: 'correspondencia' },

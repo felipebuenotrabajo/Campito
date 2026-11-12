@@ -54,12 +54,12 @@ create table public.entidades (          -- personas, sociedades y "común"
   orden           int not null default 0
 );
 insert into public.entidades(nombre, nombre_completo, tipo, orden) values
-  ('Antonio','Antonio Bueno Becerra','persona',1),
-  ('Pepe','José Bueno Becerra','persona',2),
-  ('Ada','Iluminada Fernández Lencero','persona',3),
-  ('Cati','Catalina Bueno Becerra','persona',4),
-  ('Felipe','Felipe Bueno Becerra','persona',5),
-  ('FBF','Felipe Bueno Fernández','persona',6),
+  ('Antonio',null,'persona',1),
+  ('Pepe',null,'persona',2),
+  ('Ada',null,'persona',3),
+  ('Cati',null,'persona',4),
+  ('Felipe',null,'persona',5),
+  ('FBF',null,'persona',6),
   ('Hermanos Bueno SC','Hermanos Bueno, SC','sociedad',7),
   ('Agrobueno SC','Agrobueno, SC','sociedad',8),
   ('Común',null,'comun',9);
