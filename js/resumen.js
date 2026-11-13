@@ -1,6 +1,7 @@
 // Pantalla de resumen: ingresos, gastos y mano de obra por cultivo, hectáreas, cosechas y cuentas.
 import { cargarTodo, mensajeError } from './crud.js';
 import { esc, eur, numf, MESES, sumar, redondea } from './util.js';
+import { grupoIngreso as grupoIngresoBase, AYUDAS as AYUDAS_BASE } from './reparto.js';
 
 const CULTIVOS = ['Viñas', 'Olivos', 'Almendros', 'Barbechos']; // Cereales y el resto se agrupan en «Común y otros»
 const COMUN = 'Común y otros';
@@ -30,15 +31,7 @@ export async function montarResumen(cont, x) {
     const coste = (r) => (r.horas / hpj) * r.precio_jornal;
     const grupoTajo = (t) => (CULTIVOS.includes(t) ? t : COMUN);
     const grupoDestino = (d) => (CULTIVOS.includes(d) ? d : COMUN);
-    const grupoIngreso = (r) => {
-      if (CULTIVOS.includes(r.producto)) return r.producto;
-      const t = (r.tipo || '').toLowerCase();
-      if (/pac|sub/.test(`${r.producto || ''} ${t}`.toLowerCase())) return AYUDAS;
-      if (t === 'blanca' || t === 'tinto' || t === 'tinta') return 'Viñas';
-      if (t === 'almazara' || t === 'aderezo') return 'Olivos';
-      if (t === 'almendras') return 'Almendros';
-      return COMUN;
-    };
+    const grupoIngreso = (r) => { const g = grupoIngresoBase(r); return g === AYUDAS_BASE ? AYUDAS : CULTIVOS.includes(g) ? g : COMUN; };
     const filas = [...CULTIVOS, AYUDAS, COMUN];
     const tab = Object.fromEntries(filas.map((f) => [f, { mo: 0, gasto: 0, ingreso: 0 }]));
     for (const r of diario) tab[grupoTajo(r.tajo)].mo += coste(r);

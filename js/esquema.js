@@ -412,6 +412,8 @@ export const ENTIDADES = {
 export const MENU = [
   { id: 'resumen', titulo: 'Resumen', icono: 'resumen', grupo: 'principal' },
   { id: 'personas', titulo: 'Por persona', icono: 'miembros', grupo: 'principal' },
+  { id: 'produccion', titulo: 'Producción por finca', icono: 'cosechas', grupo: 'principal' },
+  { id: 'semanas', titulo: 'Jornales por semana', icono: 'diario', grupo: 'principal' },
   { id: 'diario_trabajo' }, { id: 'gastos' }, { id: 'ingresos' }, { id: 'cosechas' },
   { id: 'parcelas' }, { id: 'fincas' },
   { id: 'movimientos_cuenta' }, { id: 'cabidas' }, { id: 'titulos_cooperativa' }, { id: 'movimientos_ada' }, { id: 'inventario' }, { id: 'maquinaria' }, { id: 'derechos_pac' }, { id: 'correspondencia' },

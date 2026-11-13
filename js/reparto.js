@@ -59,3 +59,62 @@ export function repartirGastos(gastos, indices) {
   }
   return { m, comun, sin };
 }
+
+// ---------- Resultado por persona: ingresos y mano de obra ----------
+export const CULTIVOS_GRUPO = ['Viñas', 'Olivos', 'Almendros', 'Barbechos', 'Cereales'];
+export const AYUDAS = 'Ayudas (PAC y subvenciones)';
+export const GENERALES = 'Generales y otros';
+export const FILAS_RESULTADO = [...CULTIVOS_GRUPO, AYUDAS, GENERALES];
+
+export const grupoGasto = (destino) => (CULTIVOS_GRUPO.includes(destino) ? destino : GENERALES);
+
+// Ayudas = tipo «Pac» o «Sub…» (como en el Excel, aunque el producto sea Olivos o Barbechos); el resto, por producto o tipo.
+export function grupoIngreso(r) {
+  const t = String(r.tipo || '').toLowerCase();
+  const p = String(r.producto || '').toLowerCase();
+  if (/^(pac|sub)/.test(t) || /^(pac|sub)/.test(p)) return AYUDAS;
+  if (CULTIVOS_GRUPO.includes(r.producto)) return r.producto;
+  if (['blanca', 'tinto', 'tinta'].includes(t)) return 'Viñas';
+  if (['almazara', 'aderezo'].includes(t)) return 'Olivos';
+  if (t === 'almendras') return 'Almendros';
+  return GENERALES;
+}
+
+// Ingresos: van al «agricultor real» de cada ingreso.
+export function repartirIngresos(ingresos) {
+  const m = {}; const sin = [];
+  for (const r of ingresos) {
+    const t = Number(r.total) || 0;
+    if (!t) continue;
+    if (!PERSONAS.includes(r.agricultor)) { sin.push(r); continue; }
+    const g = grupoIngreso(r);
+    ((m[r.agricultor] ??= {})[g] = (m[r.agricultor][g] || 0) + t);
+  }
+  return { m, sin };
+}
+
+// Mano de obra: cada jornada va a la explotación de su finca. Sin finca: a quien la pagó, y si no, por hectáreas del cultivo.
+// filas: [{ tajo, coste, explotacion (de la finca), pagadoPor }]
+export function repartirManoObra(filas, indices) {
+  const m = {}; const suma = (p, g, v) => ((m[p] ??= {})[g] = (m[p][g] || 0) + v);
+  for (const r of filas) {
+    const c = Number(r.coste) || 0;
+    if (!c) continue;
+    const g = CULTIVOS_GRUPO.includes(r.tajo) ? r.tajo : GENERALES;
+    const directo = [r.explotacion, r.pagadoPor].find((p) => PERSONAS.includes(p));
+    if (directo) { suma(directo, g, c); continue; }
+    const ix = indices.idx[CULTIVOS_GRUPO.includes(r.tajo) ? r.tajo : 'Todos'] ?? indices.idx.Todos;
+    for (const p of PERSONAS) if (ix?.[p]) suma(p, g, c * ix[p]);
+  }
+  return m;
+}
+
+// Une gastos, ingresos y mano de obra: persona -> grupo -> { ingresos, gastos, mo }
+export function resultadoPorPersona(gastosRep, ingRep, mo) {
+  const out = {};
+  const celda = (p, g) => ((out[p] ??= {})[g] ??= { ingresos: 0, gastos: 0, mo: 0 });
+  for (const [p, o] of Object.entries(gastosRep.m)) for (const [d, v] of Object.entries(o)) celda(p, grupoGasto(d)).gastos += v;
+  for (const [p, o] of Object.entries(ingRep.m)) for (const [g, v] of Object.entries(o)) celda(p, g).ingresos += v;
+  for (const [p, o] of Object.entries(mo)) for (const [g, v] of Object.entries(o)) celda(p, g).mo += v;
+  return out;
+}

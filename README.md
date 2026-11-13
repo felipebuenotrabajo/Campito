@@ -43,6 +43,7 @@ cabidas · titulos_cooperativa · derechos_pac · maquinaria · movimientos_ada 
 
 * **Finca** = unidad de trabajo (p. ej. «Cincho»); agrupa varias **parcelas** SIGPAC. El diario y las cosechas se anotan por finca.
 * **Explotación** = quién lleva la contabilidad (FBF, Cati, Felipe, Común). **Lote** = a quién pertenece la cosecha.
+* **Pantallas de informes:** *Por persona* (ingresos, gastos y mano de obra de cada socio), *Producción por finca* (kg, kg/ha, jornales y coste) y *Jornales por semana*.
 * **Reparto de gastos** (pantalla *Por persona*): los gastos de Hermanos Bueno SC, Agrobueno SC y FBF se reparten entre las explotaciones por hectáreas del cultivo al que van; «Hermanos» a partes iguales; los marcados como *personal* van enteros a su persona.
 * Jornales = horas ÷ 6. Total de un gasto = importe × (1 + IVA) × cantidad. Ambos valores se pueden cambiar en *Ajustes* (tabla `ajustes`).
 
@@ -60,6 +61,5 @@ node tests/test-parser.mjs hojas.json  # comprobar el importador con un volcado 
 
 ## Pendiente (siguientes fases)
 
-* Por persona: añadir ingresos y mano de obra al reparto (hojas *Antonio*, *Pepe*, *FBF*, *Cati*, *Felipe*); los gastos ya están.
-* Informes de producción por parcela (Olivos, Viñas, Cereales) y jornales por semana.
+* Informes por persona: pagos reales de cada socio y contabilidad entre ellos (columnas «Pagos de…» del Excel).
 * Informes por socio e impresión.
