@@ -118,3 +118,31 @@ export function resultadoPorPersona(gastosRep, ingRep, mo) {
   for (const [p, o] of Object.entries(mo)) for (const [g, v] of Object.entries(o)) celda(p, g).mo += v;
   return out;
 }
+
+// ---------- Cuentas entre socios: lo que ha pagado cada uno frente a lo que le corresponde ----------
+// Como en el Excel, cada sociedad se suma a la cuenta de quien la lleva: Hermanos Bueno SC → Cati, Agrobueno SC → Felipe, Pepe y Ada → FBF.
+export const CUENTA_DE = {
+  FBF: 'FBF', Pepe: 'FBF', Ada: 'FBF',
+  Cati: 'Cati', 'Hermanos Bueno SC': 'Cati',
+  Felipe: 'Felipe', 'Agrobueno SC': 'Felipe',
+  Antonio: 'Antonio', 'Común': 'Común',
+};
+
+// gastos: [{ total, pagador }], mo: [{ coste, pagador }] (pagador = nombre de entidad o null)
+// corresponde: { persona: € que le corresponde de gastos + mano de obra }
+export function cuentasEntreSocios(gastos, mo, corresponde) {
+  const f = {}; let sinG = 0, sinM = 0;
+  const fila = (c) => (f[c] ??= { gastos: 0, mo: 0 });
+  for (const g of gastos) { const c = CUENTA_DE[g.pagador]; if (c) fila(c).gastos += Number(g.total) || 0; else sinG += Number(g.total) || 0; }
+  for (const m of mo) { const c = CUENTA_DE[m.pagador]; if (c) fila(c).mo += Number(m.coste) || 0; else sinM += Number(m.coste) || 0; }
+  const debeDe = {}; // lo que corresponde también se agrupa por cuenta (Pepe cuenta con FBF)
+  for (const [p, v] of Object.entries(corresponde)) { const c = CUENTA_DE[p] ?? p; debeDe[c] = (debeDe[c] || 0) + (v || 0); }
+  const cuentas = PERSONAS.filter((p) => f[p] || debeDe[p]);
+  return {
+    filas: cuentas.map((c) => {
+      const pagado = (f[c]?.gastos || 0) + (f[c]?.mo || 0), debe = debeDe[c] || 0;
+      return { cuenta: c, gastos: f[c]?.gastos || 0, mo: f[c]?.mo || 0, pagado, corresponde: debe, saldo: pagado - debe };
+    }),
+    sinPagador: { gastos: sinG, mo: sinM },
+  };
+}

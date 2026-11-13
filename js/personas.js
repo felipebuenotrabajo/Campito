@@ -1,7 +1,7 @@
 // Pantalla «Por persona»: índices de reparto y gastos que corresponden a cada socio (como en las hojas del Excel).
 import { cargarTodo, mensajeError } from './crud.js';
 import { esc, numf, eur0 } from './util.js';
-import { PERSONAS, FILAS_RESULTADO, calcularIndices, repartirGastos, repartirIngresos, repartirManoObra, resultadoPorPersona } from './reparto.js';
+import { PERSONAS, FILAS_RESULTADO, cuentasEntreSocios, calcularIndices, repartirGastos, repartirIngresos, repartirManoObra, resultadoPorPersona } from './reparto.js';
 
 const ORDEN_DESTINOS = ['Olivos', 'Viñas', 'Almendros', 'Barbechos', 'Cereales', 'Todos', 'Her', 'Casa', 'A cuenta'];
 const ETIQUETA = { Todos: 'Generales (todos)', Her: 'Hermanos (a partes iguales)', Casa: 'Casa', 'A cuenta': 'A cuenta' };
@@ -25,7 +25,7 @@ export async function montarPersonas(cont, x) {
     const rango = (q) => q.gte('fecha', `${anio}-01-01`).lte('fecha', `${anio}-12-31`);
     try {
       [gastos, ingresos, diario] = await Promise.all([
-        cargarTodo(x.sb, 'gastos', [], 'total,destino,empresa_real_id,es_personal', rango),
+        cargarTodo(x.sb, 'gastos', [], 'total,destino,empresa_real_id,es_personal,pagado_por_id', rango),
         cargarTodo(x.sb, 'ingresos', [], 'total,producto,tipo,agricultor_id', rango),
         cargarTodo(x.sb, 'diario_trabajo', [], 'tajo,horas,precio_jornal,finca_id,pagado_por_id', rango),
       ]);
@@ -39,6 +39,10 @@ export async function montarPersonas(cont, x) {
     const tp = (p, k) => Object.values(RES[p] || {}).reduce((a, c) => a + c[k], 0);
     const quienes = PERSONAS.filter((p) => tp(p, 'ingresos') || tp(p, 'gastos') || tp(p, 'mo'));
     if (!persona || !quienes.includes(persona)) persona = quienes.includes('FBF') ? 'FBF' : quienes[0];
+    const CU = cuentasEntreSocios(gastos.map((g) => ({ total: g.total, pagador: x.nombre('entidades', g.pagado_por_id) })),
+      diario.map((d) => ({ coste: (d.horas / hpj) * d.precio_jornal, pagador: x.nombre('entidades', d.pagado_por_id) })),
+      Object.fromEntries(PERSONAS.map((p) => [p, tp(p, 'gastos') + tp(p, 'mo')])));
+    const sinPag = CU.sinPagador.gastos + CU.sinPagador.mo;
     const clase = (n) => (n < 0 ? 'neg' : 'pos');
     const resu = (c) => c.ingresos - c.gastos - c.mo;
     const filas = ORDEN_DESTINOS.filter((d) => PERSONAS.some((p) => R.m[p]?.[d]));
@@ -59,6 +63,11 @@ export async function montarPersonas(cont, x) {
         ${tabla(['', 'Ingresos', 'Gastos', 'M. obra', 'Resultado'], quienes.map((p) => [esc(p), eur0(tp(p, 'ingresos')), eur0(tp(p, 'gastos')), eur0(tp(p, 'mo')), `<b class="${clase(tp(p, 'ingresos') - tp(p, 'gastos') - tp(p, 'mo'))}">${eur0(tp(p, 'ingresos') - tp(p, 'gastos') - tp(p, 'mo'))}</b>`]),
           ['Total', ...['ingresos', 'gastos', 'mo'].map((k) => `<b>${eur0(quienes.reduce((a, p) => a + tp(p, k), 0))}</b>`), `<b>${eur0(quienes.reduce((a, p) => a + tp(p, 'ingresos') - tp(p, 'gastos') - tp(p, 'mo'), 0))}</b>`])}
         <p class="nota">La mano de obra de cada jornada va a la explotación de su finca; la que no tiene finca, a quien la pagó o, si no, por hectáreas. Los ingresos van al agricultor real de cada factura.</p>
+      </section>
+      <section><h2>Cuentas entre socios <small>${anio} · lo pagado frente a lo que corresponde</small></h2>
+        ${tabla(['Cuenta', 'Pagó gastos', 'Pagó M. obra', 'Total pagado', 'Le corresponde', 'Saldo'], CU.filas.map((f) => [esc(f.cuenta), eur0(f.gastos), eur0(f.mo), eur0(f.pagado), eur0(f.corresponde), `<b class="${clase(f.saldo)}">${eur0(f.saldo)}</b>`]),
+          ['Total', ...['gastos', 'mo', 'pagado', 'corresponde'].map((k) => `<b>${eur0(CU.filas.reduce((a, f) => a + f[k], 0))}</b>`), `<b>${eur0(CU.filas.reduce((a, f) => a + f.saldo, 0))}</b>`])}
+        <p class="nota">Saldo positivo: ha pagado más de lo que le corresponde (los demás le deben). Negativo: debe a los demás. Hermanos Bueno SC se suma a Cati, Agrobueno SC a Felipe, y Pepe a FBF, como en el Excel.${sinPag ? ` Hay ${eur0(sinPag)} de gastos y mano de obra sin pagador indicado, que no se suman a ninguna cuenta.` : ''} No incluye los ingresos cobrados.</p>
       </section>
       <section><h2>Detalle de <select id="quien" aria-label="Persona">${quienes.map((p) => `<option ${p === persona ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select> <small>${anio}</small></h2>
         ${tabla(['', 'Ingresos', 'Gastos', 'M. obra', 'Resultado'], FILAS_RESULTADO.filter((g) => RES[persona]?.[g]).map((g) => { const c = RES[persona][g]; return [esc(g), eur0(c.ingresos), eur0(c.gastos), eur0(c.mo), `<b class="${clase(resu(c))}">${eur0(resu(c))}</b>`]; }),
