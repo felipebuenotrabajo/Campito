@@ -117,7 +117,8 @@ dialog.modal form { display: flex; flex-direction: column; max-height: 92dvh; }
 dialog.modal header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.2rem; border-bottom: 1px solid var(--line); }
 dialog.modal header h2 { margin: 0; }
 .cerrar { width: 44px; height: 44px; font-size: 1.7rem; line-height: 1; border: 0; background: none; cursor: pointer; color: var(--muted); }
-.campos { padding: 1rem 1.2rem; overflow: auto; display: grid; grid-template-columns: 1fr 1fr; gap: .8rem 1rem; }
+.cuerpo { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.campos { padding: 1rem 1.2rem; display: grid; grid-template-columns: 1fr 1fr; gap: .8rem 1rem; }
 .campo { min-width: 0; } .campo.ancho, .grupo { grid-column: 1 / -1; }
 .campo small { color: var(--muted); font-size: .78rem; }
 .grupo { font: 700 .72rem var(--fuente); text-transform: uppercase; letter-spacing: .09em; color: var(--accent); margin-top: .6rem; padding-bottom: .2rem; border-bottom: 1px solid var(--line); }
@@ -218,3 +219,11 @@ dialog.modal footer { display: flex; gap: .6rem; align-items: center; padding: .
 .nota-texto { white-space: pre-wrap; margin: .5rem 0; overflow-wrap: anywhere; }
 .nota > footer { display: flex; gap: .5rem; justify-content: flex-end; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (max-width: 700px) { .sg-dib svg { max-height: 200px; } }
+@media (max-width: 700px) {
+  dialog.modal footer { gap: .4rem; padding-top: .6rem; }
+  dialog.modal footer .sp { display: none; }
+  dialog.modal footer [data-guardar], dialog.modal footer [data-modificar] { order: 1; flex: 2 1 55%; }
+  dialog.modal footer [data-cerrar] { order: 2; }
+  dialog.modal footer [data-borrar], dialog.modal footer [data-duplicar] { order: 3; flex: 1 1 40%; min-height: 38px; font-size: .9rem; }
+}

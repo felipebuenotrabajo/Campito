@@ -237,7 +237,7 @@ export async function montarCrud(id, cont, x) {
     const extra = (cfg.calc || cfg.cols.some((c) => c.calc && c.lista)) ? '<div class="calc-pie"></div>' : '';
     dlg.innerHTML = `<form method="dialog" novalidate>
       <header><h2><span data-titulo>${nuevo ? 'Añadir' : lectura ? 'Ver' : 'Editar'}</span> ${esc(cfg.singular)}</h2><button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button></header>
-      ${enl}<div class="campos">${html}</div>${extra}
+      <div class="cuerpo">${enl}<div class="campos">${html}</div>${extra}</div>
       <footer>
         ${!nuevo && puedeBorrar ? `<button type="button" class="btn peligro" data-borrar data-solo-edicion ${lectura ? 'hidden' : ''}>Eliminar</button>` : ''}
         ${!nuevo && puedeEditar ? `<button type="button" class="btn suave" data-duplicar data-solo-edicion ${lectura ? 'hidden' : ''}>Duplicar</button>` : ''}
