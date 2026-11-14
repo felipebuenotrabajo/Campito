@@ -10,6 +10,7 @@ const SI_NO = ['SI', 'NO', 'SOLICITADO'];
 // Iconos (trazos de 24px)
 export const ICONOS = {
   resumen: 'M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  notas: 'M5 3h10l4 4v14H5z M14 3v5h5 M8 13h8 M8 17h5',
   diario: 'M4 5h16v15H4z M4 9h16 M8 3v4 M16 3v4',
   gastos: 'M18 6.5A7 7 0 1 0 18 17.5 M4 10h9 M4 14h9',
   ingresos: 'M3 17l6-6 4 4 8-8 M15 7h6v6',
@@ -422,6 +423,7 @@ export const MENU = [
   { id: 'personas', titulo: 'Por persona', icono: 'miembros', grupo: 'principal' },
   { id: 'produccion', titulo: 'Producción por finca', icono: 'cosechas', grupo: 'principal' },
   { id: 'semanas', titulo: 'Jornales por semana', icono: 'diario', grupo: 'principal' },
+  { id: 'notas', titulo: 'Notas', icono: 'notas', grupo: 'otros' },
   { id: 'diario_trabajo' }, { id: 'gastos' }, { id: 'ingresos' }, { id: 'cosechas' },
   { id: 'parcelas' }, { id: 'fincas' },
   { id: 'movimientos_cuenta' }, { id: 'cabidas' }, { id: 'titulos_cooperativa' }, { id: 'movimientos_ada' }, { id: 'inventario' }, { id: 'maquinaria' }, { id: 'derechos_pac' }, { id: 'correspondencia' },

@@ -206,3 +206,15 @@ dialog.modal footer { display: flex; gap: .6rem; align-items: center; padding: .
 .sg-info { margin: .4rem 0; }
 .sg-aviso { color: #b45309; }
 .sg-refs { margin: .3rem 0; padding-left: 1.2rem; } .sg-refs li { margin: .35rem 0; }
+
+/* Notas personales */
+.nota-priv { color: var(--muted); margin: 0 0 .75rem; }
+.nota-nueva { display: grid; gap: .5rem; margin-bottom: 1rem; }
+.nota-nueva textarea, .nota textarea { width: 100%; box-sizing: border-box; padding: .6rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; resize: vertical; }
+.nota-nueva .btn { justify-self: start; }
+.notas-lista { display: grid; gap: .75rem; margin-top: .75rem; }
+.nota { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radio); padding: .75rem 1rem; box-shadow: var(--shadow); }
+.nota > header { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; color: var(--muted); font-size: .9rem; }
+.nota-texto { white-space: pre-wrap; margin: .5rem 0; overflow-wrap: anywhere; }
+.nota > footer { display: flex; gap: .5rem; justify-content: flex-end; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
