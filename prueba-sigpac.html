@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prueba API SIGPAC</title>
+<style>
+body{font:15px system-ui,sans-serif;margin:0;padding:16px;max-width:760px;margin-inline:auto;background:#fafaf7;color:#222}
+h1{font-size:20px}label{display:inline-block;margin:4px 8px 4px 0}input{width:70px;padding:6px}
+button{padding:8px 14px;margin:6px 6px 6px 0;font-size:15px}
+pre,textarea{background:#fff;border:1px solid #ccc;padding:8px;width:100%;box-sizing:border-box;font:12px monospace;white-space:pre-wrap}
+.ok{color:#0a7a2f}.ko{color:#b00020}svg{background:#fff;border:1px solid #ccc;width:100%;max-height:360px}
+</style></head><body>
+<h1>Prueba de la API SIGPAC desde el navegador</h1>
+<p>Comprueba si la API acepta peticiones desde esta web (CORS), si filtra bien por polígono/parcela y qué devuelve.</p>
+<label>Prov <input id="prov" value="6"></label><label>Municipio <input id="mun" value="152"></label>
+<label>Polígono <input id="pol" value="3"></label><label>Parcela <input id="par" value="492"></label><br>
+<button id="go">Probar</button>
+<button id="otras">Probar 5 parcelas más</button>
+<div id="res"></div><div id="dib"></div>
+<h3>Informe (cópialo y pégamelo)</h3><textarea id="inf" rows="14" readonly></textarea>
+<script>
+const BASE='https://sigpac-hubcloud.es/ogcapi/collections/recintos/items';
+const $=id=>document.getElementById(id);
+let informe=[];
+function log(t,cls){const d=document.createElement('div');d.className=cls||'';d.textContent=t;$('res').appendChild(d);informe.push(t);$('inf').value=informe.join('\n')}
+function anillos(g){if(!g)return[];if(g.type==='Polygon')return[g.coordinates];if(g.type==='MultiPolygon')return g.coordinates;return[]}
+function areaHa(poly){const lat0=poly[0][0][1]*Math.PI/180,kx=111320*Math.cos(lat0),ky=110540;
+ const a=r=>{let s=0;for(let i=0;i<r.length-1;i++){const[x1,y1]=r[i],[x2,y2]=r[i+1];s+=(x1*kx)*(y2*ky)-(x2*kx)*(y1*ky)}return Math.abs(s/2)};
+ return(a(poly[0])-poly.slice(1).reduce((t,r)=>t+a(r),0))/10000}
+async function consulta(prov,mun,pol,par,dibujar){
+ const url=`${BASE}?f=json&limit=100&provincia=${prov}&municipio=${mun}&poligono=${pol}&parcela=${par}`;
+ log(`\n== Prov ${prov} Mun ${mun} Pol ${pol} Parc ${par}`);log(url);
+ let r;try{r=await fetch(url)}catch(e){log('FALLO de red/CORS: '+e.message,'ko');return}
+ log('HTTP '+r.status+' · CORS correcto',r.ok?'ok':'ko');if(!r.ok){log((await r.text()).slice(0,300));return}
+ const j=await r.json();const f=j.features||[];
+ log(`Recintos devueltos: ${f.length} (numberMatched: ${j.numberMatched??'?'})`);
+ const mal=f.filter(x=>x.properties&&(String(x.properties.poligono)!==String(pol)||String(x.properties.parcela)!==String(par)));
+ log(mal.length?`EL FILTRO NO FUNCIONA: ${mal.length} no coinciden`:'El filtro funciona: todos coinciden',mal.length?'ko':'ok');
+ if(f[0]){log('Propiedades: '+JSON.stringify(f[0].properties));log('Geometría: '+(f[0].geometry&&f[0].geometry.type))}
+ let tot=0;f.forEach(x=>anillos(x.geometry).forEach(p=>tot+=areaHa(p)));
+ log('Superficie calculada: '+tot.toFixed(4)+' ha');
+ if(dibujar&&f.length)dibuja(f)
+}
+function dibuja(f){let pts=[];f.forEach(x=>anillos(x.geometry).forEach(p=>p[0].forEach(c=>pts.push(c))));
+ const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+ const k=Math.cos((y0+y1)/2*Math.PI/180),w=(x1-x0)*k||1e-6,h=(y1-y0)||1e-6,S=300,sc=S/Math.max(w,h);
+ const P=c=>`${((c[0]-x0)*k*sc+10).toFixed(1)},${((y1-c[1])*sc+10).toFixed(1)}`;
+ let s=`<svg viewBox="0 0 ${w*sc+20} ${h*sc+20}">`;
+ f.forEach(x=>anillos(x.geometry).forEach(p=>{s+=`<path d="${p.map(r=>'M'+r.map(P).join('L')+'Z').join('')}" fill="#9ccc65" fill-opacity=".6" stroke="#33691e" fill-rule="evenodd"/>`}));
+ $('dib').innerHTML=s+'</svg>'}
+$('go').onclick=()=>{$('res').innerHTML='';$('dib').innerHTML='';informe=[];consulta($('prov').value,$('mun').value,$('pol').value,$('par').value,true)};
+$('otras').onclick=async()=>{for(const[m,p,a]of[[152,12,415],[152,5,32],[121,9,57],[54,2,30],[2,9,193]])await consulta(6,m,p,a,false)};
+</script></body></html>
