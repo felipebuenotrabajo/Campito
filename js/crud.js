@@ -199,13 +199,15 @@ export async function montarCrud(id, cont, x) {
     for (const c of cfg.cols) if (nuevo && base[c.k] == null && c.def !== undefined) base[c.k] = c.def;
     if (nuevo && cfg.numeracion && !base[cfg.numeracion.campo]) base[cfg.numeracion.campo] = siguienteNumero(base[cfg.fechaCol]);
 
+    // En las pantallas con `vista`, abrir un registro lo muestra en solo lectura; «Modificar» activa la edición
+    let lectura = !puedeEditar || (!nuevo && !!cfg.vista);
     const campos = cfg.cols.filter((c) => !c.calc && !c.soloLista);
     let grupoActual = null;
     const html = campos.map((c) => {
       const head = c.grupo && c.grupo !== grupoActual ? `<h3 class="grupo">${esc(c.grupo)}</h3>` : '';
       if (c.grupo) grupoActual = c.grupo;
       const v = base[c.k];
-      const dis = puedeEditar ? '' : 'disabled';
+      const dis = lectura ? 'disabled' : '';
       let input;
       const id = `f_${c.k}`;
       if (c.tipo === 'area') input = `<textarea id="${id}" name="${c.k}" rows="3" ${dis}>${esc(v ?? '')}</textarea>`;
@@ -213,7 +215,7 @@ export async function montarCrud(id, cont, x) {
       else if (c.tipo === 'select') input = `<select id="${id}" name="${c.k}" ${dis}>${c.req ? '' : '<option value=""></option>'}${c.opciones.map((o) => `<option ${v === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
       else if (c.tipo === 'fk') {
         const lista = [...(x.cat[c.cat] || [])].sort((a, b) => (c.cat === 'entidades' ? a.orden - b.orden : (a.nombre || '').localeCompare(b.nombre || '', 'es')));
-        input = `<div class="fk"><select id="${id}" name="${c.k}" ${dis}><option value=""></option>${lista.map((o) => `<option value="${o.id}" ${String(v) === String(o.id) ? 'selected' : ''}>${esc(o.nombre)}</option>`).join('')}</select>${c.nuevo && puedeEditar ? `<button type="button" class="btn suave mini" data-nuevo="${c.k}" title="Crear nuevo" aria-label="Crear nuevo ${esc(c.label)}">+</button>` : ''}</div>`;
+        input = `<div class="fk"><select id="${id}" name="${c.k}" ${dis}><option value=""></option>${lista.map((o) => `<option value="${o.id}" ${String(v) === String(o.id) ? 'selected' : ''}>${esc(o.nombre)}</option>`).join('')}</select>${c.nuevo && puedeEditar ? `<button type="button" class="btn suave mini" data-solo-edicion ${lectura ? 'hidden' : ''} data-nuevo="${c.k}" title="Crear nuevo" aria-label="Crear nuevo ${esc(c.label)}">+</button>` : ''}</div>`;
       } else if (c.tipo === 'fecha') input = `<input type="date" id="${id}" name="${c.k}" value="${esc(v ?? '')}" ${dis}>`;
       else {
         const dl = c.sugerencias ? `list="dl_${c.k}"` : '';
@@ -234,20 +236,22 @@ export async function montarCrud(id, cont, x) {
     dlg.className = 'modal';
     const extra = (cfg.calc || cfg.cols.some((c) => c.calc && c.lista)) ? '<div class="calc-pie"></div>' : '';
     dlg.innerHTML = `<form method="dialog" novalidate>
-      <header><h2>${nuevo ? 'Añadir' : puedeEditar ? 'Editar' : 'Ver'} ${esc(cfg.singular)}</h2><button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button></header>
+      <header><h2><span data-titulo>${nuevo ? 'Añadir' : lectura ? 'Ver' : 'Editar'}</span> ${esc(cfg.singular)}</h2><button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button></header>
       ${enl}<div class="campos">${html}</div>${extra}
       <footer>
-        ${!nuevo && puedeBorrar ? '<button type="button" class="btn peligro" data-borrar>Eliminar</button>' : ''}
-        ${!nuevo && puedeEditar ? '<button type="button" class="btn suave" data-duplicar>Duplicar</button>' : ''}
+        ${!nuevo && puedeBorrar ? `<button type="button" class="btn peligro" data-borrar data-solo-edicion ${lectura ? 'hidden' : ''}>Eliminar</button>` : ''}
+        ${!nuevo && puedeEditar ? `<button type="button" class="btn suave" data-duplicar data-solo-edicion ${lectura ? 'hidden' : ''}>Duplicar</button>` : ''}
         <span class="sp"></span>
-        <button type="button" class="btn suave" data-cerrar>${puedeEditar ? 'Cancelar' : 'Cerrar'}</button>
-        ${puedeEditar ? '<button type="submit" class="btn primario" data-guardar>Guardar</button>' : ''}
+        <button type="button" class="btn suave" data-cerrar data-solo-lectura ${lectura ? '' : 'hidden'}>Cerrar</button>
+        ${puedeEditar ? `<button type="button" class="btn primario" data-modificar data-solo-lectura ${lectura ? '' : 'hidden'}>Modificar</button>` : ''}
+        <button type="button" class="btn suave" data-cerrar data-solo-edicion ${lectura ? 'hidden' : ''}>Cancelar</button>
+        ${puedeEditar ? `<button type="submit" class="btn primario" data-guardar data-solo-edicion ${lectura ? 'hidden' : ''}>Guardar</button>` : ''}
       </footer></form>`;
     document.body.append(dlg);
     dlg.showModal();
     dlg.addEventListener('close', () => dlg.remove());
     const form = $('form', dlg);
-    const pintarSigpac = () => { const c = $('.sg-cont', dlg); if (c) c.innerHTML = bloqueHTML(reg, puedeEditar); };
+    const pintarSigpac = () => { const c = $('.sg-cont', dlg); if (c) c.innerHTML = bloqueHTML(reg, puedeEditar && !lectura); };
     pintarSigpac();
 
     // cálculo automático (p. ej. total = importe + IVA)
@@ -280,6 +284,15 @@ export async function montarCrud(id, cont, x) {
 
     dlg.addEventListener('click', async (e) => {
       if (e.target === dlg || e.target.closest('[data-cerrar]')) return dlg.close();
+      if (e.target.closest('[data-modificar]')) {
+        lectura = false;
+        for (const el of form.elements) if (el.name) el.disabled = false;
+        $$('[data-solo-edicion]', dlg).forEach((el) => { el.hidden = false; });
+        $$('[data-solo-lectura]', dlg).forEach((el) => { el.hidden = true; });
+        $('[data-titulo]', dlg).textContent = 'Editar';
+        pintarSigpac();
+        return $('input:not([type=checkbox]),select', form)?.focus({ preventScroll: true });
+      }
       const nuevoCat = e.target.closest('[data-nuevo]');
       if (nuevoCat) {
         const col = cfg.cols.find((c) => c.k === nuevoCat.dataset.nuevo);
@@ -314,7 +327,7 @@ export async function montarCrud(id, cont, x) {
     });
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!puedeEditar) return;
+      if (!puedeEditar || lectura) return;
       const v = leer();
       for (const c of campos) if (c.req && (v[c.k] == null || v[c.k] === '')) { toast(`Falta «${c.label}»`, 'error'); $(`[name=${c.k}]`, form)?.focus(); return; }
       if (cfg.tabla === 'miembros') v.email = v.email.toLowerCase();
@@ -326,7 +339,7 @@ export async function montarCrud(id, cont, x) {
       if (['entidades', 'cultivos', 'fincas', 'tareas', 'proveedores', 'compradores', 'conceptos_gasto', 'cuentas', 'parcelas'].includes(cfg.tabla)) await x.refrescarCat(cfg.tabla);
       dlg.close(); await recargar(); pintar();
     });
-    setTimeout(() => $('input:not([type=checkbox]),select', form)?.focus({ preventScroll: true }), 50);
+    if (!lectura) setTimeout(() => $('input:not([type=checkbox]),select', form)?.focus({ preventScroll: true }), 50);
   }
 
   function siguienteNumero(fecha) {

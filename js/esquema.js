@@ -192,6 +192,7 @@ export const ENTIDADES = {
     ],
     filtros: [c('termino', 'Término', 'select', { opciones: ['VILLALBA BARROS', 'SANTA MARTA', 'FUENTE MAESTRE', 'ACEUCHAL'] }), fk('cultivo_id', 'Cultivo', 'cultivos'), fk('explotacion_id', 'Explotación', 'entidades'), fk('lote_id', 'Lote', 'entidades'), fk('finca_id', 'Finca', 'fincas')],
     sigpac: true,
+    vista: true,
     enlaces: (r) => {
       const rc = (r.ref_catastral || '').replace(/\s/g, '').toUpperCase();
       const movil = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
