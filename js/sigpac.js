@@ -118,6 +118,8 @@ export async function consultarCatastro(sg) {
 
 function catastroHTML(r, s, puedeEditar) {
   if (!s.catastro) return '';
+  const c0 = s.catastro[0];
+  if (s.catastro.length === 1 && c0.ref === r.ref_catastral && c0.pol === parseInt(r.poligono, 10) && c0.par === parseInt(r.parcela, 10)) return '';
   if (!s.catastro.length) return '<p class="sg-info">Catastro no devuelve referencia para esta parcela.</p>';
   const filas = s.catastro.map((c) => {
     const igual = c.pol === parseInt(r.poligono, 10) && c.par === parseInt(r.parcela, 10);
