@@ -129,3 +129,5 @@ function catastroHTML(r, s, puedeEditar) {
   }).join('');
   return `<p class="sg-info">Referencia catastral bajo el contorno:</p><ul class="sg-refs">${filas}</ul>`;
 }
+
+export const codMunicipio = (r) => MUNICIPIOS[clave(r.termino || '').toUpperCase()];

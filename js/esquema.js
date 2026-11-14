@@ -1,7 +1,7 @@
 // Definición declarativa de cada pantalla: columnas, formularios, filtros y totales.
 // Para añadir un campo nuevo a una pantalla basta con añadirlo aquí (y a la tabla en Supabase).
 import { eur, numf, redondea, fechaf } from './util.js';
-import { enlaceVisor } from './sigpac.js';
+import { enlaceVisor, hayCodigo as hayCodigoSigpac, codMunicipio, listaRecintos } from './sigpac.js';
 
 export const TAJOS = ['Viñas', 'Olivos', 'Almendros', 'Barbechos', 'Cereales', 'Día de orden', 'Casa'];
 export const DESTINOS = ['Todos', 'Viñas', 'Olivos', 'Almendros', 'Barbechos', 'Cereales', 'Casa', 'A cuenta', 'Her'];
@@ -194,9 +194,11 @@ export const ENTIDADES = {
     sigpac: true,
     enlaces: (r) => {
       const rc = (r.ref_catastral || '').replace(/\s/g, '').toUpperCase();
-      const ident = [r.termino, r.poligono && `Pol. ${r.poligono}`, r.parcela && `Parc. ${r.parcela}`, r.recinto && `Rec. ${r.recinto}`].filter(Boolean).join(' · ');
+      const movil = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+      const cod = hayCodigoSigpac(r) ? `Prov 6 · Mun ${codMunicipio(r)} · Agg 0 · Zona 0 · Pol ${parseInt(r.poligono, 10)} · Parc ${parseInt(r.parcela, 10)}${listaRecintos(r.recinto)[0] ? ` · Rec ${listaRecintos(r.recinto)[0]}` : ''}` : [r.termino, r.poligono && `Pol. ${r.poligono}`, r.parcela && `Parc. ${r.parcela}`].filter(Boolean).join(' · ');
+      const ident = cod;
       return {
-        nota: ident ? `Para buscarla en SIGPAC: ${ident}` : '',
+        nota: ident ? (movil ? `En el móvil el visor SIGPAC no abre la parcela directamente: usa su buscador por referencia con ${ident}` : `Datos SIGPAC: ${ident}`) : '',
         links: [
           r.latitud != null && r.longitud != null ? { t: 'Ver en Google Maps', href: `https://www.google.com/maps/search/?api=1&query=${r.latitud}%2C${r.longitud}` } : null,
           { t: 'Ver en visor SIGPAC', href: enlaceVisor(r) },
