@@ -197,3 +197,11 @@ dialog.modal footer { display: flex; gap: .6rem; align-items: center; padding: .
 .enlaces small { flex-basis: 100%; color: var(--muted, #666); }
 .check.cero { display: block; margin: .75rem 0; padding: .6rem .75rem; border: 1px solid var(--borde, #d9d4c5); border-radius: 10px; }
 .filtros-cab { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Contorno SIGPAC en la ficha de parcela */
+.sigpac-bloque { padding: 0 1rem .75rem; }
+.sg-dib svg { width: 100%; max-height: 260px; background: var(--card, #fff); border: 1px solid var(--line, #ddd); border-radius: 8px; }
+.sg-sel { fill: #9ccc65; fill-opacity: .65; stroke: #33691e; stroke-width: 1.2; }
+.sg-otro { fill: #bbb; fill-opacity: .4; stroke: #888; stroke-width: .8; }
+.sg-info { margin: .4rem 0; }
+.sg-aviso { color: #b45309; }

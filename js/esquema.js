@@ -190,6 +190,7 @@ export const ENTIDADES = {
       c('notas', 'Notas', 'area'),
     ],
     filtros: [c('termino', 'Término', 'select', { opciones: ['VILLALBA BARROS', 'SANTA MARTA', 'FUENTE MAESTRE', 'ACEUCHAL'] }), fk('cultivo_id', 'Cultivo', 'cultivos'), fk('explotacion_id', 'Explotación', 'entidades'), fk('lote_id', 'Lote', 'entidades'), fk('finca_id', 'Finca', 'fincas')],
+    sigpac: true,
     enlaces: (r) => {
       const rc = (r.ref_catastral || '').replace(/\s/g, '').toUpperCase();
       const ident = [r.termino, r.poligono && `Pol. ${r.poligono}`, r.parcela && `Parc. ${r.parcela}`, r.recinto && `Rec. ${r.recinto}`].filter(Boolean).join(' · ');

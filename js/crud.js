@@ -2,6 +2,7 @@
 import { ENTIDADES } from './esquema.js';
 import { $, $$, esc, eur, numf, fechaf, hoy, MESES, sumar, toast, descargarCSV } from './util.js';
 import { clave } from './parser.js';
+import { consultar, bloqueHTML, hayCodigo } from './sigpac.js';
 
 const PAGINA = 100;
 const NUM = new Set(['num', 'eur', 'int']);
@@ -79,6 +80,7 @@ export async function montarCrud(id, cont, x) {
   cont.innerHTML = `
     <header class="cab">
       <h1>${esc(cfg.titulo)}</h1>
+      ${puedeEditar && cfg.sigpac ? `<button class="btn suave" data-a="sigpac-todas" title="Descarga el contorno y las hectáreas de todas las parcelas">Actualizar desde SIGPAC</button>` : ''}
       ${puedeEditar ? `<button class="btn primario" data-a="nuevo">+ Añadir</button>` : ''}
     </header>
     <div class="barra">
@@ -148,6 +150,7 @@ export async function montarCrud(id, cont, x) {
     const t = e.target.closest('[data-a],[data-id],[data-ord]');
     if (!t) return;
     if (t.dataset.a === 'nuevo') return abrirForm(null);
+    if (t.dataset.a === 'sigpac-todas') return sigpacTodas(t);
     if (t.dataset.a === 'mas') { st.visibles += PAGINA; return pintar(); }
     if (t.dataset.a === 'csv') {
       const filas = filtradas();
@@ -158,6 +161,25 @@ export async function montarCrud(id, cont, x) {
     }
     if (t.dataset.id !== undefined) { const r = st.filas.find((f) => String(f[pk]) === t.dataset.id); if (r) abrirForm(r); }
   });
+
+  async function sigpacTodas(btn) {
+    const todas = st.filas.filter(hayCodigo);
+    if (!confirm(`Se consultará SIGPAC para ${todas.length} parcelas y se guardará su contorno. ¿Continuar?`)) return;
+    btn.disabled = true;
+    const fallos = [];
+    for (let i = 0; i < todas.length; i++) {
+      btn.textContent = `SIGPAC ${i + 1}/${todas.length}…`;
+      try {
+        const sg = await consultar(todas[i]);
+        const { error } = await x.sb.from('parcelas').update({ sigpac: sg }).eq('id', todas[i].id);
+        if (error) throw error;
+      } catch (e) { fallos.push(`${todas[i].nombre} ${todas[i].poligono}/${todas[i].parcela}: ${e.message || e}`); }
+    }
+    btn.disabled = false; btn.textContent = 'Actualizar desde SIGPAC';
+    await recargar(); pintar();
+    toast(fallos.length ? `Hecho, con ${fallos.length} fallos` : `Contorno de ${todas.length} parcelas guardado`, fallos.length ? 'error' : 'ok');
+    if (fallos.length) alert('No se pudieron actualizar:\n\n' + fallos.join('\n'));
+  }
 
   // ----- formulario -----
   function abrirForm(reg, duplicando = false) {
@@ -197,6 +219,7 @@ export async function montarCrud(id, cont, x) {
       const e = cfg.enlaces(base);
       enl = `<div class="enlaces">${e.links.map((l) => `<a class="btn suave mini" href="${esc(l.href)}" target="_blank" rel="noopener noreferrer">${esc(l.t)} ↗</a>`).join('')}${e.nota ? `<small>${esc(e.nota)}</small>` : ''}</div>`;
     }
+    if (!nuevo && cfg.sigpac) enl += '<div class="sg-cont"></div>';
     const dlg = document.createElement('dialog');
     dlg.className = 'modal';
     const extra = (cfg.calc || cfg.cols.some((c) => c.calc && c.lista)) ? '<div class="calc-pie"></div>' : '';
@@ -214,6 +237,8 @@ export async function montarCrud(id, cont, x) {
     dlg.showModal();
     dlg.addEventListener('close', () => dlg.remove());
     const form = $('form', dlg);
+    const pintarSigpac = () => { const c = $('.sg-cont', dlg); if (c) c.innerHTML = bloqueHTML(reg, puedeEditar); };
+    pintarSigpac();
 
     // cálculo automático (p. ej. total = importe + IVA)
     const leer = () => {
@@ -257,6 +282,16 @@ export async function montarCrud(id, cont, x) {
         sel.insertAdjacentHTML('beforeend', `<option value="${data.id}">${esc(nombre)}</option>`);
         sel.value = String(data.id);
         toast(`«${nombre}» añadido`);
+      }
+      if (e.target.closest('[data-sigpac]')) {
+        const b = e.target.closest('[data-sigpac]'); b.disabled = true; b.textContent = 'Consultando SIGPAC…';
+        try {
+          const sg = await consultar(reg);
+          const { error } = await x.sb.from('parcelas').update({ sigpac: sg }).eq('id', reg.id);
+          if (error) throw error;
+          reg.sigpac = sg; toast('Contorno actualizado');
+        } catch (er) { toast(mensajeError(er), 'error'); }
+        pintarSigpac(); recargar().then(pintar);
       }
       if (e.target.closest('[data-duplicar]')) { dlg.close(); abrirForm(reg, true); }
       if (e.target.closest('[data-borrar]')) {
