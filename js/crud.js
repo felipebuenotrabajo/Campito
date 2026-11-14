@@ -2,7 +2,7 @@
 import { ENTIDADES } from './esquema.js';
 import { $, $$, esc, eur, numf, fechaf, hoy, MESES, sumar, toast, descargarCSV } from './util.js';
 import { clave } from './parser.js';
-import { consultar, bloqueHTML, hayCodigo } from './sigpac.js';
+import { consultar, consultarCatastro, bloqueHTML, hayCodigo } from './sigpac.js';
 
 const PAGINA = 100;
 const NUM = new Set(['num', 'eur', 'int']);
@@ -162,17 +162,27 @@ export async function montarCrud(id, cont, x) {
     if (t.dataset.id !== undefined) { const r = st.filas.find((f) => String(f[pk]) === t.dataset.id); if (r) abrirForm(r); }
   });
 
+  // SIGPAC + Catastro de una parcela; guarda y devuelve el registro actualizado
+  async function actualizarSigpac(r) {
+    const sg = await consultar(r);
+    try { sg.catastro = await consultarCatastro(sg); } catch (e) { /* Catastro opcional */ }
+    const cambios = { sigpac: sg };
+    if (!r.ref_catastral && sg.catastro?.length === 1) cambios.ref_catastral = sg.catastro[0].ref;
+    const { error } = await x.sb.from('parcelas').update(cambios).eq('id', r.id);
+    if (error) throw error;
+    Object.assign(r, cambios);
+    return r;
+  }
+
   async function sigpacTodas(btn) {
     const todas = st.filas.filter(hayCodigo);
-    if (!confirm(`Se consultará SIGPAC para ${todas.length} parcelas y se guardará su contorno. ¿Continuar?`)) return;
+    if (!confirm(`Se consultará SIGPAC y Catastro para ${todas.length} parcelas y se guardará su contorno. ¿Continuar?`)) return;
     btn.disabled = true;
     const fallos = [];
     for (let i = 0; i < todas.length; i++) {
       btn.textContent = `SIGPAC ${i + 1}/${todas.length}…`;
       try {
-        const sg = await consultar(todas[i]);
-        const { error } = await x.sb.from('parcelas').update({ sigpac: sg }).eq('id', todas[i].id);
-        if (error) throw error;
+        await actualizarSigpac(todas[i]);
       } catch (e) { fallos.push(`${todas[i].nombre} ${todas[i].poligono}/${todas[i].parcela}: ${e.message || e}`); }
     }
     btn.disabled = false; btn.textContent = 'Actualizar desde SIGPAC';
@@ -286,13 +296,14 @@ export async function montarCrud(id, cont, x) {
       if (e.target.closest('[data-sigpac]')) {
         const b = e.target.closest('[data-sigpac]'); b.disabled = true; b.textContent = 'Consultando SIGPAC…';
         try {
-          const sg = await consultar(reg);
-          const { error } = await x.sb.from('parcelas').update({ sigpac: sg }).eq('id', reg.id);
-          if (error) throw error;
-          reg.sigpac = sg; toast('Contorno actualizado');
+          await actualizarSigpac(reg);
+          const f = $('[name=ref_catastral]', form); if (f && reg.ref_catastral && !f.value) f.value = reg.ref_catastral;
+          toast('Contorno y referencia catastral actualizados');
         } catch (er) { toast(mensajeError(er), 'error'); }
         pintarSigpac(); recargar().then(pintar);
       }
+      const usar = e.target.closest('[data-usar-ref]');
+      if (usar) { const f = $('[name=ref_catastral]', form); if (f) { f.value = usar.dataset.usarRef; toast('Referencia puesta en el formulario: pulsa Guardar'); } }
       if (e.target.closest('[data-duplicar]')) { dlg.close(); abrirForm(reg, true); }
       if (e.target.closest('[data-borrar]')) {
         if (!confirm(`¿Eliminar este ${cfg.singular}? No se puede deshacer.`)) return;

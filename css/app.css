@@ -205,3 +205,4 @@ dialog.modal footer { display: flex; gap: .6rem; align-items: center; padding: .
 .sg-otro { fill: #bbb; fill-opacity: .4; stroke: #888; stroke-width: .8; }
 .sg-info { margin: .4rem 0; }
 .sg-aviso { color: #b45309; }
+.sg-refs { margin: .3rem 0; padding-left: 1.2rem; } .sg-refs li { margin: .35rem 0; }
