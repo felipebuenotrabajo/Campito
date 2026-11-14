@@ -203,7 +203,8 @@ export const ENTIDADES = {
         nota: ident ? (movil ? `En el móvil el visor SIGPAC no abre la parcela directamente: usa su buscador por referencia con ${ident}` : `Datos SIGPAC: ${ident}`) : '',
         links: [
           r.latitud != null && r.longitud != null ? { t: 'Ver en Google Maps', href: `https://www.google.com/maps/search/?api=1&query=${r.latitud}%2C${r.longitud}` } : null,
-          { t: 'Ver en visor SIGPAC', href: enlaceVisor(r) },
+          { t: listaRecintos(r.recinto).length > 1 ? 'Ver parcela en visor SIGPAC' : 'Ver en visor SIGPAC', href: enlaceVisor(r, listaRecintos(r.recinto).length === 1 ? listaRecintos(r.recinto)[0] : null) },
+          ...(hayCodigoSigpac(r) && listaRecintos(r.recinto).length > 1 ? listaRecintos(r.recinto).map((n) => ({ t: `Recinto ${n}`, href: enlaceVisor(r, n) })) : []),
           rc.length >= 14 ? { t: 'Ver en Catastro', href: `https://www1.sedecatastro.gob.es/Cartografia/mapa.aspx?refcat=${rc.slice(0, 14)}` } : null,
         ].filter(Boolean),
       };

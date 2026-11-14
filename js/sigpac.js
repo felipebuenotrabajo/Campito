@@ -70,11 +70,10 @@ export function bloqueHTML(r, puedeEditar) {
 }
 
 // Enlace directo al visor SIGPAC (formato documentado en la ayuda del visor, apartado "Por referencia SIGPAC")
-export function enlaceVisor(r) {
+export function enlaceVisor(r, rec) {
   const visor = 'https://sigpac.mapa.gob.es/fega/visor/';
   if (!hayCodigo(r)) return visor;
   const mun = MUNICIPIOS[clave(r.termino).toUpperCase()];
-  const rec = listaRecintos(r.recinto)[0];
   return `${visor}?provincia=6&municipio=${mun}&agregado=0&zona=0&poligono=${parseInt(r.poligono, 10)}&parcela=${parseInt(r.parcela, 10)}${rec ? `&recinto=${rec}` : ''}`;
 }
 
