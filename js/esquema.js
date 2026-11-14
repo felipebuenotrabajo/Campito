@@ -1,6 +1,7 @@
 // Definición declarativa de cada pantalla: columnas, formularios, filtros y totales.
 // Para añadir un campo nuevo a una pantalla basta con añadirlo aquí (y a la tabla en Supabase).
 import { eur, numf, redondea, fechaf } from './util.js';
+import { enlaceVisor } from './sigpac.js';
 
 export const TAJOS = ['Viñas', 'Olivos', 'Almendros', 'Barbechos', 'Cereales', 'Día de orden', 'Casa'];
 export const DESTINOS = ['Todos', 'Viñas', 'Olivos', 'Almendros', 'Barbechos', 'Cereales', 'Casa', 'A cuenta', 'Her'];
@@ -198,7 +199,7 @@ export const ENTIDADES = {
         nota: ident ? `Para buscarla en SIGPAC: ${ident}` : '',
         links: [
           r.latitud != null && r.longitud != null ? { t: 'Ver en Google Maps', href: `https://www.google.com/maps/search/?api=1&query=${r.latitud}%2C${r.longitud}` } : null,
-          { t: 'Abrir visor SIGPAC', href: 'https://sigpac.mapa.gob.es/fega/visor/' },
+          { t: 'Ver en visor SIGPAC', href: enlaceVisor(r) },
           rc.length >= 14 ? { t: 'Ver en Catastro', href: `https://www1.sedecatastro.gob.es/Cartografia/mapa.aspx?refcat=${rc.slice(0, 14)}` } : null,
         ].filter(Boolean),
       };
