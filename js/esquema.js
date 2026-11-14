@@ -161,6 +161,8 @@ export const ENTIDADES = {
       c('recinto', 'Recinto', 'texto'),
       c('termino', 'Término municipal', 'texto', { lista: true, sugerencias: ['VILLALBA BARROS', 'SANTA MARTA', 'FUENTE MAESTRE', 'ACEUCHAL'] }),
       c('ref_catastral', 'Referencia catastral', 'texto', { lista: true, ayuda: 'Se usa para abrir la parcela en la Sede del Catastro' }),
+      c('latitud', 'Latitud', 'num', { ayuda: 'Coordenadas de Google Maps (Visor SIGPAC)' }),
+      c('longitud', 'Longitud', 'num'),
       c('region', 'Región', 'texto'),
       c('ha_sigpac', 'Ha SIGPAC', 'num', { grupo: 'Superficie' }),
       c('ha_otros_recintos', 'Ha otros recintos', 'num'),
@@ -194,6 +196,7 @@ export const ENTIDADES = {
       return {
         nota: ident ? `Para buscarla en SIGPAC: ${ident}` : '',
         links: [
+          r.latitud != null && r.longitud != null ? { t: 'Ver en Google Maps', href: `https://www.google.com/maps/search/?api=1&query=${r.latitud}%2C${r.longitud}` } : null,
           { t: 'Abrir visor SIGPAC', href: 'https://sigpac.mapa.gob.es/fega/visor/' },
           rc.length >= 14 ? { t: 'Ver en Catastro', href: `https://www1.sedecatastro.gob.es/Cartografia/mapa.aspx?refcat=${rc.slice(0, 14)}` } : null,
         ].filter(Boolean),
